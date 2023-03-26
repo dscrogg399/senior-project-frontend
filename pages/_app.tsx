@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const validPages = ["/", "/reports", "/control"];
+const validPages = ["/", "/reports", "/control", "/test"];
 
 function HouseApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
