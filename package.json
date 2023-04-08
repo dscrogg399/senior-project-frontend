@@ -16,14 +16,25 @@
     "@types/react-dom": "18.0.11",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
+    "heroicons": "^2.0.17",
+    "konva": "^8.4.3",
+    "leaflet": "^1.9.3",
+    "leaflet-defaulticon-compatibility": "^0.1.1",
     "lottie-react": "^2.4.0",
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-hook-form": "^7.43.8",
+    "react-konva": "^18.2.5",
+    "react-leaflet": "^4.2.1",
+    "react-resize-detector": "^8.0.4",
+    "react-spinners": "^0.13.8",
     "recoil": "^0.7.7",
-    "typescript": "5.0.2"
+    "typescript": "5.0.2",
+    "use-image": "^1.1.0"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.3",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.21",
     "tailwindcss": "^3.2.7"

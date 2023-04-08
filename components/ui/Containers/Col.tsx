@@ -1,4 +1,4 @@
-export default function Row({
+export default function Col({
   children,
   className,
 }: {
