@@ -18,7 +18,7 @@ export default function PrimaryButton({
       type={type || "button"}
       onClick={onClick}
       disabled={disabled || false}
-      className="flex items-center justify-center w-full px-6 py-3 font-medium rounded-md transition ease-in-out delay-50 bg-hPurple-500 hover:-translate-y-0.5 hover:bg-hPurple-400 duration-300 active:bg-hPurple-300 active:text-gray-500 disabled:bg-hPurple-400 disabled:text-gray-300 disabled:hover:translate-y-0"
+      className="flex items-center justify-center w-full px-6 py-3 font-medium rounded-md transition ease-in-out delay-50 bg-hPurple-500 md:text-sm hover:-translate-y-0.5 hover:bg-hPurple-400 duration-300 active:bg-hPurple-300 active:text-gray-500 disabled:bg-hPurple-400 disabled:text-gray-300 disabled:hover:translate-y-0"
     >
       {loading ? (
         <div className="flex h-5 items-center justify-center">

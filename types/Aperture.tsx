@@ -6,4 +6,5 @@ export interface Aperture {
   y: number;
   created_at: string;
   is_active: boolean;
+  title: string;
 }

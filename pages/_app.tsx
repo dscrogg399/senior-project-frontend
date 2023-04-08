@@ -4,6 +4,7 @@ import { RecoilRoot } from "recoil";
 import { Inter } from "next/font/google";
 import NavBar from "../components/navigation/nav";
 import { useRouter } from "next/router";
+import Head from "next/head";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,22 +15,27 @@ function HouseApp({ Component, pageProps }: AppProps) {
 
   const isValidPage = validPages.includes(router.pathname);
   return (
-    <RecoilRoot>
-      <div className={inter.className + " flex flex-col h-screen text-white"}>
-        {isValidPage ? (
-          <>
-            <NavBar />
-            <div className="flex flex-grow bg-gray-700 p-4">
+    <>
+      <Head>
+        <title>Hively</title>
+      </Head>
+      <RecoilRoot>
+        <div className={inter.className + " flex flex-col h-screen text-white"}>
+          {isValidPage ? (
+            <>
+              <NavBar />
+              <div className="flex flex-grow bg-gray-700 p-4">
+                <Component {...pageProps} />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-grow bg-gray-700 p-4 overflow-hidden">
               <Component {...pageProps} />
             </div>
-          </>
-        ) : (
-          <div className="flex flex-grow bg-gray-700 p-4 overflow-hidden">
-            <Component {...pageProps} />
-          </div>
-        )}
-      </div>
-    </RecoilRoot>
+          )}
+        </div>
+      </RecoilRoot>
+    </>
   );
 }
 

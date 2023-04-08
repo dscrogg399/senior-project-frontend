@@ -20,6 +20,13 @@
       }
     ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "components/dashboard/components/floor-plan.jsx",
+    "components/dashboard/components/floor-plan.jsx"
+  ],
   "exclude": ["node_modules"]
 }
