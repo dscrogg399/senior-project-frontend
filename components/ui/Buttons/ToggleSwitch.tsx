@@ -18,7 +18,7 @@ export default function ToggleSwitch({
         <span className="sr-only">Toggle switch</span>
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute h-full w-full rounded-md bg-white"
+          className="pointer-events-none absolute h-full w-full rounded-full bg-white"
         />
         <span
           aria-hidden="true"

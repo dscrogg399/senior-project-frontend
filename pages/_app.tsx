@@ -1,4 +1,5 @@
 import "./styles/globals.css";
+import "react-tooltip/dist/react-tooltip.css";
 import { AppProps } from "next/app";
 import { RecoilRoot } from "recoil";
 import { Inter } from "next/font/google";
