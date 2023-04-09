@@ -12,7 +12,7 @@ export default function HivelyLink({
   return (
     <Link
       href={href}
-      className={`text-hBlue-500 hover:text-hPurple-500 active:text-hPurple-300 ${className}`}
+      className={`transition ease-in-out delay-50 text-hPurple-500 hover:text-hPurple-300 duration-300 active:text-hPurple-100  ${className}`}
     >
       {children}
     </Link>

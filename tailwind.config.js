@@ -13,6 +13,8 @@ module.exports = {
       colors: {
         hivelyPurple: "#6466F1",
         hivelyBlue: "#11F0CC",
+        hWarning: "#EEC643",
+        hError: "#DA2C38",
         hBlue: {
           50: "#E7FDFA",
           100: "#CFFCF4",
