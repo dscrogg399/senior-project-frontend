@@ -18,7 +18,6 @@ export default function Thermostat() {
     register,
     setValue,
     watch,
-    handleSubmit,
     formState: { errors },
   } = useForm<IFormInput>({
     defaultValues: {
