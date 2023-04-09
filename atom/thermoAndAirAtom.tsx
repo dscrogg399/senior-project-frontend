@@ -15,9 +15,9 @@ export const thermostatAtom = atom({
 export const airQualityAtom = atom({
   key: "airQualityAtom",
   default: {
-    co_level: 6,
-    co2_level: 420,
+    co_level: 20,
+    co2_level: 566,
     humidity: 0.55,
-    pm_level: 0.5,
+    pm_level: 20,
   } as AirQuality,
 });

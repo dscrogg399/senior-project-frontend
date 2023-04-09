@@ -1,14 +1,12 @@
 import Panel from "../../ui/Containers/Panel";
 import Row from "../../ui/Containers/Row";
 import PanelLabel from "../../ui/Labels/PanelLabel";
+import { useRecoilValue } from "recoil";
+import { airQualityAtom } from "../../../atom/thermoAndAirAtom";
 
 export default function AirQuality() {
-  const air_quality = {
-    co_level: 20,
-    co2_level: 566,
-    humidity: 0.55,
-    pm_level: 20,
-  };
+  //state
+  const air_quality = useRecoilValue(airQualityAtom);
 
   const headingStyle = "text-2xl font-semibold";
   const measureStyle = "font-semibold";

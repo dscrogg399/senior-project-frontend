@@ -4,8 +4,6 @@ import Row from "../ui/Containers/Row";
 import { Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import { Aperture } from "../../types/Aperture";
-import { aperturesAtom } from "../../atom/appliancesAndAperturesAtom";
-import { useRecoilState } from "recoil";
 
 const icons = {
   1: "https://cdn-icons-png.flaticon.com/512/515/515094.png",
@@ -17,8 +15,6 @@ export default function ApertureIndicator({
 }: {
   aperture: Aperture;
 }) {
-  const [apertures, setApertures] = useRecoilState(aperturesAtom);
-
   let apertureOff = new Icon({
     iconUrl: "https://i.imgur.com/VLWJJFc.png",
     iconSize: [30, 30],
@@ -28,17 +24,6 @@ export default function ApertureIndicator({
     iconUrl: "https://i.imgur.com/T4mLqPl.png",
     iconSize: [35, 35],
   });
-
-  //function that finds the current aperture in the state and changes its status
-  // const toggleAperture = () => {
-  //   const newApertures = apertures.map((ap) => {
-  //     if (ap.id === aperture.id) {
-  //       return { ...ap, status: !ap.status };
-  //     }
-  //     return ap;
-  //   });
-  //   setApertures(newApertures);
-  // };
 
   return (
     <Marker
