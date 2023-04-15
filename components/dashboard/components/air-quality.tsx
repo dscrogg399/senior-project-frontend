@@ -19,7 +19,7 @@ export default function AirQuality() {
     //get current air qual
     let res = await fetcher.get("air_quality/");
     //handle errors
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setError(res.message);
       console.error(res.message);
       return;

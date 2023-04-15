@@ -43,7 +43,7 @@ export default function Thermostat() {
     //get current thermostat info
     let res = await fetcher.get("thermostat/");
     //handle errors
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setError(res.message);
       console.error(res.message);
       return;
@@ -77,7 +77,7 @@ export default function Thermostat() {
 
     let res = await fetcher.post("thermostat/", payload);
     //handle errors
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setError(res.message);
       console.error(res.message);
       setSubmitting(false);

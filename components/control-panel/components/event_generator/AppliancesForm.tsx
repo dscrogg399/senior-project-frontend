@@ -89,7 +89,7 @@ export default function AppliancesForm() {
     let res = await fetcher.post("create_event/", payload);
 
     //error handling
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setFormError(res.message);
       console.error(res.message);
       setSubmitting(false);

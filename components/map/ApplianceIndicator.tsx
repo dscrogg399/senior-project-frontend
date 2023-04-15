@@ -72,7 +72,7 @@ export default function ApplianceIndicator({
     let res = await fetcher.post("appliances/", payload);
 
     //check errors, if bad notify and reset state
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setAppliances(oldAppliances);
       toast(`Failed to toggle ${appliance.fields.title}`, {
         position: "top-center",

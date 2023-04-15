@@ -30,7 +30,7 @@ export default function Map() {
   async function fetchAppliances() {
     let res = await fetcher.get("appliances/");
     //check errors
-    if (res.status !== 200) {
+    if (res.code !== 200) {
       console.error(res.message);
       setApplianceError(res.message);
     }
@@ -40,9 +40,8 @@ export default function Map() {
   //fetch apertures
   async function fetchApertures() {
     let res = await fetcher.get("apertures/");
-    console.log(res);
     //check errors
-    if (res.status !== 200) {
+    if (res.code !== 200) {
       console.error(res.message);
       setApertureError(res.message);
     }

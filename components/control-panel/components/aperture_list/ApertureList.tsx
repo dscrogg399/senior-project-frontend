@@ -107,7 +107,7 @@ export default function ApertureList() {
                     let res = await fetcher.post("apertures/", payload);
 
                     //check errors, if bad notify and reset state
-                    if (res.code !== "200") {
+                    if (res.code !== 200) {
                       setApertures(oldApertures);
                       toast(`Failed to toggle ${aperture.fields.title}`, {
                         position: "top-center",

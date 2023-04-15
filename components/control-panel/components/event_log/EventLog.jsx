@@ -54,7 +54,7 @@ export default function EventLog() {
     let res = await fetcher.get("get_todays_events/");
 
     //error checking
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       console.error(res.message);
       toast(`Failed to fetch todays event log`, {
         position: "top-center",

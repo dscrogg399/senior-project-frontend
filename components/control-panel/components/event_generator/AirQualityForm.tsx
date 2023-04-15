@@ -58,7 +58,7 @@ export default function AppliancesForm() {
     let res = await fetcher.get("air_quality/");
 
     //error handling
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setFormError(res.message);
       console.error(res.message);
       return;
@@ -110,7 +110,7 @@ export default function AppliancesForm() {
     let res = await fetcher.post("air_quality/", payload);
 
     //error handling
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setFormError(res.message);
       console.error(res.message);
       setSubmitting(false);

@@ -34,6 +34,7 @@ import Col from "../ui/Containers/Col";
 import { EventLog } from "../../types/EventLog";
 import { fetcher } from "../../lib/fetcher";
 import FormError from "../ui/Forms/FormError";
+import { BeatLoader } from "react-spinners";
 
 //get months of this year for select
 const months = eachMonthOfInterval({
@@ -54,6 +55,8 @@ export default function ReportsPage() {
   const [reportsError, setReportsError] = useState<string | null>(null);
   const [noReports, setNoReports] = useState<boolean>(true);
 
+  const [showLoading, setShowLoading] = useState<boolean>(true);
+
   //graph state
   const [energyData, setEnergyData] = useState<any[]>([]);
   const [waterData, setWaterData] = useState<any[]>([]);
@@ -64,7 +67,7 @@ export default function ReportsPage() {
 
   async function fetchBudget() {
     let res = await fetcher.get("budget/");
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setBudgetError(res.message);
       console.error(res.message);
       return;
@@ -80,13 +83,14 @@ export default function ReportsPage() {
     let res = await fetcher.post("monthly_report/", payload);
 
     //error checking
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setBudgetError(res.message);
       console.error(res.message);
       return;
     }
     setReports(res.data);
     setNoReports(false);
+    setShowLoading(false);
   }
 
   //life cycle methods
@@ -98,6 +102,7 @@ export default function ReportsPage() {
 
   //on month change
   useEffect(() => {
+    setShowLoading(true);
     fetchMonthlyReport();
   }, [selectedMonth]);
 
@@ -121,13 +126,11 @@ export default function ReportsPage() {
     let energy = 0;
     let water = 0;
     let cost = 0;
-    console.log("reports changed");
-    console.log(reports);
     for (const report of reports) {
       //append the data from reports
-      energy += report.fields.watts_used / 1000;
-      water += report.fields.water_used;
-      cost += report.fields.cost;
+      energy += report.watts_used / 1000;
+      water += report.water_used;
+      cost += report.cost;
       energyByDate.push(energy);
       waterByDate.push(water);
       costByDate.push(cost);
@@ -138,7 +141,7 @@ export default function ReportsPage() {
       if (index === costByDate.length - 1) {
         return costByDate[costByDate.length - 1];
       }
-      if (!costByDate[index]) {
+      if (!costByDate[index] && costByDate[index] !== 0) {
         return linearProject(costByDate, index);
       }
       return null;
@@ -147,7 +150,7 @@ export default function ReportsPage() {
       if (index === energyByDate.length - 1) {
         return energyByDate[energyByDate.length - 1];
       }
-      if (!energyByDate[index]) {
+      if (!energyByDate[index] && energyByDate[index] !== 0) {
         return linearProject(energyByDate, index);
       }
       return null;
@@ -156,7 +159,7 @@ export default function ReportsPage() {
       if (index === waterByDate.length - 1) {
         return waterByDate[waterByDate.length - 1];
       }
-      if (!waterByDate[index]) {
+      if (!waterByDate[index] && waterByDate[index] !== 0) {
         return linearProject(waterByDate, index);
       }
       return null;
@@ -246,15 +249,20 @@ export default function ReportsPage() {
         type: "linear" as const,
         display: true,
         position: "left" as const,
+        ticks: {
+          beginAtZero: true,
+        },
         title: {
           display: true,
           text: "Cost ($)",
         },
+        beginAtZero: true,
       },
       y1: {
         type: "linear" as const,
         display: true,
         position: "right" as const,
+        beginAtZero: true,
         title: {
           display: true,
           text: "Energy Usage (kWh)",
@@ -267,6 +275,7 @@ export default function ReportsPage() {
         type: "linear" as const,
         display: true,
         position: "right" as const,
+        beginAtZero: true,
         title: {
           display: true,
           text: "Water Usage (gal)",
@@ -294,39 +303,6 @@ export default function ReportsPage() {
     end: lastDayOfMonth(selectedMonth),
   });
   let labels = days.map((day) => day.getDate().toString());
-
-  // //for each day of the month
-  // for (const day of days) {
-  //   //skip future days
-  //   if (day > new Date()) {
-  //     continue;
-  //   }
-  //   //generate random data for each day
-  //   let dayCost = 0;
-  //   //weekends
-  //   if ([0, 6].includes(day.getDay())) {
-  //     let newEnergy = faker.datatype.number({ min: 30, max: 40 });
-  //     let newWater = faker.datatype.number({ min: 300, max: 400 });
-  //     energy += newEnergy;
-  //     water += newWater;
-  //     dayCost += newEnergy * 0.12;
-  //     dayCost += newWater * 0.003368983957219;
-  //   }
-  //   //weekdays
-  //   else {
-  //     let newEnergy = faker.datatype.number({ min: 20, max: 30 });
-  //     let newWater = faker.datatype.number({ min: 200, max: 300 });
-  //     energy += newEnergy;
-  //     water += newWater;
-  //     dayCost += newEnergy * 0.12;
-  //     dayCost += newWater * 0.003368983957219;
-  //   }
-  //   //increment data
-  //   cost += dayCost;
-  //   energyData.push(energy);
-  //   waterData.push(water);
-  //   costData.push(cost);
-  // }
 
   //format data for graphs
   const data = {
@@ -397,6 +373,8 @@ export default function ReportsPage() {
               setSelected={setSelectedMonth}
             />
           </Row>
+          {/* loading indicator */}
+          {showLoading && <BeatLoader loading={true} color="#fff" />}
           {/* warnings */}
           <Row className="space-x-6">
             <div className="flex h-full">

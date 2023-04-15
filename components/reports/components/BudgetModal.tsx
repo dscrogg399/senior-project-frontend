@@ -66,7 +66,7 @@ export default function BudgetModal({
     let res = await fetcher.post("budget/", payload);
 
     //check for errors
-    if (res.code !== "200") {
+    if (res.code !== 200) {
       setFormError("Failed to set budget. Please try again later.");
       console.error(res.message);
       setSubmitting(false);

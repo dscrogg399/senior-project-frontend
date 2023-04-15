@@ -35,7 +35,7 @@ export class LineFitter {
     let det = this.count * this.sumX2 - this.sumX * this.sumX;
     let offset = (this.sumX2 * this.sumY - this.sumX * this.sumXY) / det;
     let scale = (this.count * this.sumXY - this.sumX * this.sumY) / det;
-    return offset + scale * x;
+    return Math.max(offset + scale * x, 0);
   }
 }
 
