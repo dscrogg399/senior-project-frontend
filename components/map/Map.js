@@ -6,17 +6,54 @@ import { MapContainer, ImageOverlay } from "react-leaflet";
 import { LatLngBounds } from "leaflet";
 import ApplianceIndicator from "./ApplianceIndicator";
 import ApertureIndicator from "./ApertureIndicator";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import {
   appliancesAtom,
   aperturesAtom,
 } from "../../atom/appliancesAndAperturesAtom";
+import { fetcher } from "../../lib/fetcher";
+import { useState, useEffect } from "react";
+import { useInterval } from "usehooks-ts";
 
 export default function Map() {
+  //map bounds
   const bounds = new LatLngBounds([0, 0], [13.5, 20]);
 
-  const appliances = useRecoilValue(appliancesAtom);
-  const apertures = useRecoilValue(aperturesAtom);
+  //state
+  const [appliances, setAppliances] = useRecoilState(appliancesAtom);
+  const [apertures, setApertures] = useRecoilState(aperturesAtom);
+
+  const [applianceError, setApplianceError] = useState(null);
+  const [apertureError, setApertureError] = useState(null);
+
+  //fetch appliances
+  async function fetchAppliances() {
+    let res = await fetcher.get("appliances/");
+    //check errors
+    if (res.status !== 200) {
+      console.error(res.message);
+      setApplianceError(res.message);
+    }
+    setAppliances(res.data);
+  }
+
+  //fetch apertures
+  async function fetchApertures() {
+    let res = await fetcher.get("apertures/");
+    console.log(res);
+    //check errors
+    if (res.status !== 200) {
+      console.error(res.message);
+      setApertureError(res.message);
+    }
+    setApertures(res.data);
+  }
+
+  //fetch appliances on mount
+  useEffect(() => {
+    fetchAppliances();
+    fetchApertures();
+  }, []);
 
   return (
     <MapContainer
@@ -33,10 +70,10 @@ export default function Map() {
         zIndex={30}
       />
       {appliances.map((appliance) => (
-        <ApplianceIndicator key={appliance.id} appliance={appliance} />
+        <ApplianceIndicator key={appliance.pk} appliance={appliance} />
       ))}
       {apertures.map((aperture) => (
-        <ApertureIndicator key={aperture.id} aperture={aperture} />
+        <ApertureIndicator key={aperture.pk} aperture={aperture} />
       ))}
     </MapContainer>
   );

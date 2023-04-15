@@ -16,7 +16,8 @@ export default function EventGenerator() {
       <PanelLabel>Event Generator</PanelLabel>
       <EventTabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
       {selectedTab === "Appliances" && <AppliancesForm />}
-      {selectedTab === "Apertures" && <AperturesForm />}
+      {/* cutting this from final project for time contsraints, not exactly necessary */}
+      {/* {selectedTab === "Apertures" && <AperturesForm />} */}
       {selectedTab === "Air Quality" && (
         <Row className="w-full h-full justify-center items-center">
           <AirQualityForm />

@@ -6,8 +6,11 @@ import { appliancesAtom } from "../../../../atom/appliancesAndAperturesAtom";
 import Row from "../../../ui/Containers/Row";
 import { Appliance } from "../../../../types/Appliance";
 import ToggleSwitch from "../../../ui/Buttons/ToggleSwitch";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { fetcher } from "../../../../lib/fetcher";
+import { toast } from "react-toastify";
+import { useInterval } from "usehooks-ts";
 
 const icons = {
   1: "https://cdn-icons-png.flaticon.com/512/2961/2961545.png",
@@ -37,8 +40,34 @@ export default function ApplianceList() {
     query === ""
       ? appliances
       : appliances.filter((appliance: Appliance) =>
-          appliance.title.toLowerCase().includes(query.toLowerCase())
+          appliance.fields.title.toLowerCase().includes(query.toLowerCase())
         );
+
+  //fetch appliances
+  async function fetchAppliances() {
+    let res = await fetcher.get("appliances/");
+    //check errors
+    if (res.code !== 200) {
+      console.error(res.message);
+      toast(`Failed to fetch appliance list`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    }
+    setAppliances(res.data);
+  }
+
+  //life cycles
+  //on mount
+  useEffect(() => {
+    fetchAppliances();
+  }, []);
 
   return (
     <Panel className="h-full">
@@ -50,37 +79,65 @@ export default function ApplianceList() {
       </Row>
       <ul className="overflow-y-auto max-h-[69vh] 2xl:max-h-[80vh]">
         {filteredAppliances.map((appliance: Appliance) => (
-          <li key={appliance.id}>
+          <li key={appliance.pk}>
             <Row className="w-full border-b-2 border-gray-800 ">
               <Row className="w-3/5 p-3 space-x-4">
                 <div className="bg-hPurple-400 w-8 h-8 relative rounded-full">
                   <Image
                     fill
                     src={
-                      icons[appliance.appliance_type_id as keyof typeof icons]
+                      icons[
+                        appliance.fields.appliance_type as keyof typeof icons
+                      ]
                     }
-                    alt={`${appliance.title} icon`}
+                    alt={`${appliance.fields.title} icon`}
                     className="p-1"
                   />
                 </div>
-                <span>{appliance?.title}</span>
+                <span>{appliance?.fields.title}</span>
               </Row>
               <div className="w-2/5 flex items-center justify-center">
                 <ToggleSwitch
-                  enabled={appliance?.status}
-                  setEnabled={() => {
-                    setAppliances(
-                      appliances.map((app) => {
-                        if (app.id === appliance.id) {
-                          return {
-                            ...app,
-                            status: !app.status,
-                          };
-                        } else {
-                          return app;
-                        }
-                      })
-                    );
+                  enabled={appliance?.fields.status}
+                  setEnabled={async () => {
+                    const oldAppliances = appliances;
+
+                    //toggle state
+                    const newAppliances = appliances.map((app: Appliance) => {
+                      if (app.pk === appliance.pk) {
+                        return {
+                          ...app,
+                          fields: {
+                            ...app.fields,
+                            status: !app.fields.status,
+                          },
+                        };
+                      }
+                      return app;
+                    });
+                    setAppliances(newAppliances);
+
+                    let payload = {
+                      id: appliance.pk,
+                    };
+
+                    let res = await fetcher.post("appliances/", payload);
+
+                    //check errors, if bad notify and reset state
+                    if (res.code !== "200") {
+                      setAppliances(oldAppliances);
+                      toast(`Failed to toggle ${appliance.fields.title}`, {
+                        position: "top-center",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                      });
+                      return;
+                    }
                   }}
                 />
               </div>

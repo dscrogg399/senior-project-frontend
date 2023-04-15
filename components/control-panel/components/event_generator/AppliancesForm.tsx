@@ -6,12 +6,14 @@ import Row from "../../../ui/Containers/Row";
 import { SubmitHandler, useForm } from "react-hook-form";
 import Col from "../../../ui/Containers/Col";
 import Select from "../../../ui/Forms/Select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BoltIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import TimeInput from "../../../ui/Forms/TimeInput";
 import PrimaryButton from "../../../ui/Buttons/PrimaryButton";
 import { format } from "date-fns";
+import FormError from "../../../ui/Forms/FormError";
+import { fetcher } from "../../../../lib/fetcher";
 
 interface IFormInput {
   on_at: string;
@@ -26,6 +28,17 @@ export default function AppliancesForm() {
   const applianceTypes = useRecoilValue(applianceTypesAtom);
 
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [firstLoad, setFirstLoad] = useState(true);
+
+  //useEffect to set default selectedAppliance
+  useEffect(() => {
+    if (firstLoad && appliances.length > 0) {
+      setSelectedAppliance(appliances[0]);
+      setFirstLoad(false);
+    }
+  }, [appliances]);
 
   const {
     register,
@@ -38,9 +51,10 @@ export default function AppliancesForm() {
   } = useForm<IFormInput>({});
 
   //dummy submit
-  const onSubmit: SubmitHandler<IFormInput> = (data) => {
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     clearErrors();
     setFormError(null);
+    setSubmitting(true);
 
     //parse and validating time
     let startTime = new Date();
@@ -61,39 +75,28 @@ export default function AppliancesForm() {
     );
     endTime.setSeconds(0);
 
-    let duration = endTime.getTime() - startTime.getTime();
-    if (duration <= 0) {
+    if (endTime.getTime() - startTime.getTime() <= 0) {
       setFormError("Start time must come before end time");
       return;
     }
 
-    //create new event
-    let minutes = duration / 1000 / 60;
-    let applianceType = (applianceTypes as any)[
-      selectedAppliance.appliance_type_id
-    ];
-    let wattageUsed = applianceType.wattage * minutes;
-    let waterUsed = applianceType.gallons * minutes;
-    let newID = events.length + 1;
-
-    let newEvent = {
-      id: newID,
-      appliance_id: selectedAppliance.id,
-      appliance_type_id: selectedAppliance.appliance_type_id,
-      appliance_name: selectedAppliance.title,
-      on_at: format(startTime, "MM/dd/yyyy HH:mm"),
-      off_at: format(endTime, "MM/dd/yyyy HH:mm"),
-      wattage_used: wattageUsed,
-      water_used: waterUsed,
-      cost: wattageUsed * 0.00012 + waterUsed * 0.003368983957219,
-      log_id: 1,
+    let payload = {
+      appliance_id: selectedAppliance.pk,
+      on_at: format(startTime, "yyyy-MM-dd HH:mm:ss"),
+      off_at: format(endTime, "yyyy-MM-dd HH:mm:ss"),
     };
 
-    console.log(newEvent);
+    let res = await fetcher.post("create_event/", payload);
 
-    //add new event to events
-    setEvents([...events, newEvent]);
-
+    //error handling
+    if (res.code !== "200") {
+      setFormError(res.message);
+      console.error(res.message);
+      setSubmitting(false);
+      return;
+    }
+    setEvents([res.data, ...events]);
+    setSubmitting(false);
     reset();
   };
 
@@ -137,8 +140,10 @@ export default function AppliancesForm() {
           min={watch("on_at")}
           errors={errors}
         />
-        <PrimaryButton type="submit">Generate Event</PrimaryButton>
-        {formError && <p className="text-red-500 text-sm">{formError}</p>}
+        <PrimaryButton type="submit" loading={submitting} disabled={submitting}>
+          Generate Event
+        </PrimaryButton>
+        {formError && <FormError>{formError}</FormError>}
       </Col>
     </form>
   );

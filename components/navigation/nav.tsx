@@ -4,6 +4,15 @@ import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
 import { classNames } from "../../lib/functions";
 import Link from "next/link";
+import { fetcher } from "../../lib/fetcher";
+import { useEffect, useState } from "react";
+import { useRecoilState } from "recoil";
+import {
+  appliancesAtom,
+  aperturesAtom,
+} from "../../atom/appliancesAndAperturesAtom";
+import { useInterval } from "usehooks-ts";
+import { toast } from "react-toastify";
 
 const navigation = [
   { name: "Dashboard", href: "/" },
@@ -13,6 +22,76 @@ const navigation = [
 
 export default function NavBar() {
   const router = useRouter();
+
+  //state
+  const [appliances, setAppliances] = useRecoilState(appliancesAtom);
+  const [apertures, setApertures] = useRecoilState(aperturesAtom);
+  const [stopRefetching, setStopRefetching] = useState(false);
+
+  //fetch appliances
+  async function fetchAppliances() {
+    let res = await fetcher.get("appliances/");
+    //check errors
+    if (res.code !== 200) {
+      console.error(res.message);
+      toast(`Failed to fetch appliance list, try refreshing page`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      setStopRefetching(true);
+      return;
+    }
+    setAppliances(res.data);
+  }
+
+  //fetch apertures
+  async function fetchApertures() {
+    let res = await fetcher.get("apertures/");
+
+    //check errors
+    if (res.code !== 200) {
+      console.error(res.message);
+      toast(`Failed to fetch aperture list, try refreshing page`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      setStopRefetching(true);
+      return;
+    }
+    setApertures(res.data);
+  }
+
+  let refetchTime =
+    router.pathname === "/" || router.pathname === "/control" ? 5000 : 60000;
+
+  //fetch appliances on mount
+  useEffect(() => {
+    fetchAppliances();
+    fetchApertures();
+  }, []);
+
+  //refetch appliances and apertures every five seconds if page is index or /control, otherwise only refetch every 60 seconds to avoid strain
+  //this is so information when the map or control panel opens is as not stale as possible
+  useInterval(
+    () => {
+      fetchAppliances();
+      fetchApertures();
+    },
+    stopRefetching ? null : refetchTime
+  );
+
   return (
     <Disclosure as="nav" className="bg-gray-800">
       {({ open }) => (

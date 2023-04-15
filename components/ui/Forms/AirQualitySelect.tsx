@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { classNames } from "../../../lib/functions";
 import Col from "../Containers/Col";
 
-export default function Select({
+export default function AirQualitySelect({
   label,
   items,
   selected,
@@ -25,9 +25,7 @@ export default function Select({
             </Listbox.Label>
             <div className="relative mt-2">
               <Listbox.Button className="relative w-full cursor-default rounded-md bg-gray-200 py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-hPurple-500 sm:text-sm">
-                <span className="block truncate">
-                  {selected?.fields?.title}
-                </span>
+                <span className="block truncate">{selected?.title}</span>
                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                   <ChevronUpDownIcon
                     className="h-5 w-5 text-gray-400"
@@ -65,7 +63,7 @@ export default function Select({
                               "block truncate"
                             )}
                           >
-                            {item.fields.title}
+                            {item.title}
                           </span>
 
                           {selected ? (

@@ -7,6 +7,8 @@ import { Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import { appliancesAtom } from "../../atom/appliancesAndAperturesAtom";
 import { useRecoilState } from "recoil";
+import { fetcher } from "../../lib/fetcher";
+import { toast } from "react-toastify";
 
 const icons = {
   1: "https://cdn-icons-png.flaticon.com/512/2961/2961545.png",
@@ -31,6 +33,7 @@ export default function ApplianceIndicator({
 }: {
   appliance: Appliance;
 }) {
+  //state
   const [appliances, setAppliances] = useRecoilState(appliancesAtom);
 
   let applianceOn = new Icon({
@@ -43,22 +46,53 @@ export default function ApplianceIndicator({
     iconSize: [30, 30],
   });
 
-  //function that finds the current appliance in the state and changes its status
-  const toggleAppliance = (enabled: boolean) => {
-    const newAppliances = appliances.map((app) => {
-      if (app.id === appliance.id) {
-        return { ...app, status: !app.status };
+  //function that toggles the appliance then updates the state from api response
+  const toggleAppliance = async () => {
+    const oldAppliances = appliances;
+
+    //toggle state
+    const newAppliances = appliances.map((app: Appliance) => {
+      if (app.pk === appliance.pk) {
+        return {
+          ...app,
+          fields: {
+            ...app.fields,
+            status: !app.fields.status,
+          },
+        };
       }
       return app;
     });
     setAppliances(newAppliances);
+
+    let payload = {
+      id: appliance.pk,
+    };
+
+    let res = await fetcher.post("appliances/", payload);
+
+    //check errors, if bad notify and reset state
+    if (res.code !== "200") {
+      setAppliances(oldAppliances);
+      toast(`Failed to toggle ${appliance.fields.title}`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      return;
+    }
   };
 
   return (
     <Marker
-      key={appliance.id}
-      position={[appliance.x, appliance.y]}
-      icon={appliance.status ? applianceOn : applianceOff}
+      key={appliance.pk}
+      position={[appliance.fields.x, appliance.fields.y]}
+      icon={appliance.fields.status ? applianceOn : applianceOff}
     >
       <Popup closeButton={false} maxWidth={1000}>
         <div className="w-full bg-white text-black">
@@ -66,23 +100,25 @@ export default function ApplianceIndicator({
             <div className="bg-hPurple-400 w-16 h-16 relative rounded-full">
               <Image
                 fill
-                src={icons[appliance.appliance_type_id as keyof typeof icons]}
-                alt={`${appliance.title} icon`}
+                src={
+                  icons[appliance.fields.appliance_type as keyof typeof icons]
+                }
+                alt={`${appliance.fields.title} icon`}
                 className="p-2"
               />
             </div>
             <h3 className="font-semibold pt-3 text-center text-md">
-              {appliance.title}
+              {appliance.fields.title}
             </h3>
 
             <Row className="w-full items-center space-x-3 justify-between">
-              {appliance.appliance_type_id === 1 && (
+              {appliance.fields.appliance_type === 1 && (
                 <ToggleSwitch
-                  enabled={appliance.status}
+                  enabled={appliance.fields.status}
                   setEnabled={toggleAppliance}
                 />
               )}
-              {appliance.status ? (
+              {appliance.fields.status ? (
                 <Row className="space-x-2 w-full justify-center">
                   <p className="bg-hPurple-400 p-1 px-2 rounded-xl font-medium">
                     On

@@ -10,6 +10,8 @@ import { useRecoilState } from "recoil";
 import { budgetAtom } from "../../../atom/budgetAtom";
 import { useEffect, useState } from "react";
 import ToggleSwitch from "../../ui/Buttons/ToggleSwitch";
+import { fetcher } from "../../../lib/fetcher";
+import FormError from "../../ui/Forms/FormError";
 
 interface IFormInput {
   max_cost: number;
@@ -27,12 +29,16 @@ export default function BudgetModal({
   //state
   const [budget, setBudget] = useRecoilState(budgetAtom);
   const [budgetEnabled, setBudgetEnabled] = useState(budget.is_active);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   //form
   const {
     register,
     setValue,
     handleSubmit,
+    reset,
+    clearErrors,
     formState: { errors },
   } = useForm<IFormInput>({});
 
@@ -44,14 +50,30 @@ export default function BudgetModal({
   }, [open, budget]);
 
   //on submit, update budget
-  const onSubmit: SubmitHandler<IFormInput> = (data) => {
-    setBudget({
-      ...budget,
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+    setSubmitting(true);
+    //reset errors
+    clearErrors();
+    setFormError(null);
+
+    let payload = {
       max_cost: data.max_cost,
       max_energy: data.max_energy,
       max_water: data.max_water,
       is_active: budgetEnabled,
-    });
+    };
+
+    let res = await fetcher.post("budget/", payload);
+
+    //check for errors
+    if (res.code !== "200") {
+      setFormError("Failed to set budget. Please try again later.");
+      console.error(res.message);
+      setSubmitting(false);
+      return;
+    }
+    setBudget(res.data);
+    setSubmitting(false);
     setOpen(false);
   };
 
@@ -75,7 +97,7 @@ export default function BudgetModal({
               label={"Max. Cost"}
               id={"max_cost"}
               min={0}
-              step={10}
+              step={5}
               placeholder={"0"}
               units="$"
               register={register}
@@ -116,12 +138,19 @@ export default function BudgetModal({
               }}
             />
           </Row>
+          {formError && <FormError>{formError}</FormError>}
           <div className="flex w-full justify-end">
             <Row className="mt-5 w-1/2 items-center justify-center space-x-6">
               <ModalSecondaryButton onClick={() => setOpen(false)}>
                 Cancel
               </ModalSecondaryButton>
-              <ModalPrimaryButton type="submit">Save</ModalPrimaryButton>
+              <ModalPrimaryButton
+                type="submit"
+                loading={submitting}
+                disabled={submitting}
+              >
+                Save
+              </ModalPrimaryButton>
             </Row>
           </div>
         </form>

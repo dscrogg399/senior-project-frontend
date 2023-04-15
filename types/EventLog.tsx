@@ -1,5 +1,9 @@
 export interface EventLog {
-  id: number;
+  pk: number;
+  fields: EventLogFields;
+}
+
+interface EventLogFields {
   watts_used: number;
   water_used: number;
   cost: number;

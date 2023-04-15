@@ -27,8 +27,8 @@ export default function ApertureIndicator({
 
   return (
     <Marker
-      position={[aperture.x, aperture.y]}
-      icon={aperture.status ? apertureOn : apertureOff}
+      position={[aperture.fields.x, aperture.fields.y]}
+      icon={aperture.fields.status ? apertureOn : apertureOff}
     >
       <Popup closeButton={false} maxWidth={1000}>
         <div className="w-full bg-white text-black">
@@ -36,25 +36,25 @@ export default function ApertureIndicator({
             <div className="bg-hPurple-400 w-16 h-16 relative rounded-full">
               <Image
                 fill
-                src={icons[aperture.type as keyof typeof icons]}
-                alt={`${aperture.title} icon`}
+                src={icons[aperture.fields.type as keyof typeof icons]}
+                alt={`${aperture.fields.title} icon`}
                 className="p-3"
               />
             </div>
             <h3 className="font-semibold pt-3 text-center text-md">
-              {aperture.title}
+              {aperture.fields.title}
             </h3>
 
-            {aperture.status ? (
+            {aperture.fields.status ? (
               <Row className="space-x-2 w-full justify-center">
                 <p className="bg-hPurple-400 p-1 px-2 rounded-xl font-medium">
-                  On
+                  Open
                 </p>
               </Row>
             ) : (
               <Row className="space-x-2 w-full justify-center">
                 <p className="bg-gray-400 p-1 px-2 rounded-xl font-medium">
-                  Off
+                  Closed
                 </p>
               </Row>
             )}

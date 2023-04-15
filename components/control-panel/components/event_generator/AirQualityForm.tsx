@@ -2,13 +2,16 @@ import { useRecoilState } from "recoil";
 import { airQualityAtom } from "../../../../atom/thermoAndAirAtom";
 import { SubmitHandler, useForm } from "react-hook-form";
 import Col from "../../../ui/Containers/Col";
-import Select from "../../../ui/Forms/Select";
 import { useEffect, useState } from "react";
 import PrimaryButton from "../../../ui/Buttons/PrimaryButton";
 import Panel from "../../../ui/Containers/Panel";
 import AirQualInput from "../../../ui/Forms/AirQualInput";
 import { AirQuality } from "../../../../types/AirQuality";
 import { Tooltip } from "react-tooltip";
+import AirQualitySelect from "../../../ui/Forms/AirQualitySelect";
+import { fetcher } from "../../../../lib/fetcher";
+import { useInterval } from "usehooks-ts";
+import FormError from "../../../ui/Forms/FormError";
 
 interface IFormInput {
   value: number;
@@ -26,16 +29,17 @@ export default function AppliancesForm() {
   const [airQuality, setAirQuality] = useRecoilState(airQualityAtom);
   const [selectedValue, setSelectedValue] = useState(selectItems[0]);
 
-  //styles
-  const headingStyle = "text-lg font-semibold";
-  const measureStyle = "text-sm font-semibold";
-  const panelStyle = "p-2 items-center justify-center";
+  const [firstLoad, setFirstLoad] = useState(true);
+
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
     setValue,
     watch,
     handleSubmit,
+    clearErrors,
     formState: { errors },
   } = useForm<IFormInput>({
     defaultValues: {
@@ -43,39 +47,88 @@ export default function AppliancesForm() {
     },
   });
 
-  const onSubmit: SubmitHandler<IFormInput> = (data) => {
+  //styles
+  const headingStyle = "text-lg font-semibold";
+  const measureStyle = "text-sm font-semibold";
+  const panelStyle = "p-2 items-center justify-center";
+
+  //fetch air qual
+  async function fetchAirQualityData() {
+    //get current air qual
+    let res = await fetcher.get("air_quality/");
+
+    //error handling
+    if (res.code !== "200") {
+      setFormError(res.message);
+      console.error(res.message);
+      return;
+    }
+    setAirQuality(res.data);
+    if (firstLoad) {
+      setValue("value", res.data[selectedValue.value as keyof AirQuality]);
+      setFirstLoad(false);
+    }
+  }
+
+  //life cycle methods
+  //on mount
+  useEffect(() => {
+    fetchAirQualityData();
+  }, []);
+
+  //interval refresh every 5 minutes
+  useInterval(() => {
+    fetchAirQualityData();
+  }, 60000 * 5);
+
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+    setSubmitting(true);
+
+    //clear old errors
+    clearErrors();
+    setFormError(null);
+
+    //build payload
     let payload;
-    if (selectedValue.value === "co_level") {
-      payload = { ...airQuality, co_level: data.value };
-      setAirQuality(payload);
+
+    switch (selectedValue.value) {
+      case "co_level":
+        payload = { ...airQuality, co_level: data.value };
+        break;
+      case "co2_level":
+        payload = { ...airQuality, co2_level: data.value };
+        break;
+      case "pm_level":
+        payload = { ...airQuality, pm_level: data.value };
+        break;
+      case "humidity":
+        payload = { ...airQuality, humidity: data.value / 100 };
+        break;
+    }
+
+    //send request
+    let res = await fetcher.post("air_quality/", payload);
+
+    //error handling
+    if (res.code !== "200") {
+      setFormError(res.message);
+      console.error(res.message);
+      setSubmitting(false);
       return;
     }
-    if (selectedValue.value === "co2_level") {
-      payload = { ...airQuality, co2_level: data.value };
-      setAirQuality(payload);
-      return;
-    }
-    if (selectedValue.value === "pm_level") {
-      payload = { ...airQuality, pm_level: data.value };
-      setAirQuality(payload);
-      return;
-    }
-    if (selectedValue.value === "humidity") {
-      payload = { ...airQuality, humidity: data.value / 100 };
-      setAirQuality(payload);
-      return;
-    }
+    setAirQuality(res.data);
+    setSubmitting(false);
   };
 
   //on select change, change default value
   useEffect(() => {
     if (selectedValue.value === "humidity") {
-      let currVal = airQuality[selectedValue.value as keyof AirQuality] * 100;
+      let currVal = airQuality[selectedValue?.value as keyof AirQuality] * 100;
 
       setValue("value", Math.round(currVal));
       return;
     }
-    setValue("value", airQuality[selectedValue.value as keyof AirQuality]);
+    setValue("value", airQuality[selectedValue?.value as keyof AirQuality]);
   }, [selectedValue]);
 
   return (
@@ -88,9 +141,9 @@ export default function AppliancesForm() {
           {/* CO */}
           <Panel
             className={`${panelStyle} ${
-              airQuality.co_level > 150
+              airQuality?.co_level >= 70
                 ? "bg-hError"
-                : airQuality.co_level > 50
+                : airQuality?.co_level >= 30
                 ? "bg-hWarning"
                 : "bg-gray-600"
             }`}
@@ -98,10 +151,10 @@ export default function AppliancesForm() {
             <div
               data-tooltip-id="co"
               data-tooltip-content={`${
-                airQuality.co_level > 150
+                airQuality?.co_level >= 70
                   ? "CO level is dangerously high."
                   : `${
-                      airQuality.co_level > 50
+                      airQuality?.co_level >= 30
                         ? "CO level is higher than acceptable levels."
                         : "CO level is acceptable."
                     }`
@@ -109,16 +162,16 @@ export default function AppliancesForm() {
               className="flex flex-col w-full h-full items-center justify-evenly"
             >
               <h2 className={headingStyle}>CO</h2>
-              <p className={measureStyle}>{airQuality.co_level} PPM</p>
+              <p className={measureStyle}>{airQuality?.co_level} PPM</p>
               <Tooltip id="co" place="top" />
             </div>
           </Panel>
           {/* CO2 */}
           <Panel
             className={`${panelStyle} ${
-              airQuality.co2_level > 5000
+              airQuality?.co2_level >= 2000
                 ? "bg-hError"
-                : airQuality.co2_level > 1000
+                : airQuality?.co2_level >= 1000
                 ? "bg-hWarning"
                 : "bg-gray-600"
             }`}
@@ -127,10 +180,10 @@ export default function AppliancesForm() {
               className="flex flex-col w-full h-full items-center justify-evenly"
               data-tooltip-id="co2"
               data-tooltip-content={`${
-                airQuality.co2_level > 5000
+                airQuality?.co2_level >= 2000
                   ? "CO2 level is dangerously high."
                   : `${
-                      airQuality.co2_level > 1000
+                      airQuality?.co2_level >= 1000
                         ? "CO2 level is higher than acceptable levels."
                         : "CO2 level is acceptable."
                     }`
@@ -139,18 +192,18 @@ export default function AppliancesForm() {
               <h2 className={headingStyle}>
                 CO<sub>2</sub>
               </h2>
-              <p className={measureStyle}>{airQuality.co2_level} PPM</p>
+              <p className={measureStyle}>{airQuality?.co2_level} PPM</p>
               <Tooltip id="co2" place="top" />
             </div>
           </Panel>
           {/* humidity */}
           <Panel
             className={`${panelStyle} ${
-              airQuality.humidity > 0.7
+              airQuality?.humidity >= 0.7
                 ? "bg-hError"
-                : airQuality.humidity > 0.6
+                : airQuality?.humidity >= 0.6
                 ? "bg-hWarning"
-                : airQuality.humidity < 0.3
+                : airQuality?.humidity <= 0.3
                 ? "bg-hWarning"
                 : "bg-gray-600"
             }`}
@@ -159,11 +212,11 @@ export default function AppliancesForm() {
               className="flex flex-col w-full h-full items-center justify-evenly"
               data-tooltip-id="humidity"
               data-tooltip-content={`${
-                airQuality.humidity > 0.7
+                airQuality?.humidity >= 0.7
                   ? "Humidity level is too high."
-                  : airQuality.humidity > 0.6
+                  : airQuality?.humidity >= 0.6
                   ? "Humidity level is higher than acceptable levels."
-                  : airQuality.humidity < 0.3
+                  : airQuality?.humidity <= 0.3
                   ? "Humidity level is lower than acceptable levels."
                   : "Humidity level is acceptable."
               }`}
@@ -172,7 +225,7 @@ export default function AppliancesForm() {
                 H<sub>2</sub>O
               </h2>
               <p className={measureStyle}>
-                {airQuality.humidity.toLocaleString(undefined, {
+                {airQuality?.humidity?.toLocaleString(undefined, {
                   style: "percent",
                   maximumFractionDigits: 1,
                 })}
@@ -183,9 +236,9 @@ export default function AppliancesForm() {
           {/* pm */}
           <Panel
             className={`${panelStyle} ${
-              airQuality.pm_level > 50
+              airQuality?.pm_level >= 50
                 ? "bg-hError"
-                : airQuality.pm_level > 35
+                : airQuality?.pm_level >= 35
                 ? "bg-hWarning"
                 : "bg-gray-600"
             }`}
@@ -194,10 +247,10 @@ export default function AppliancesForm() {
               className="flex flex-col w-full h-full items-center justify-evenly"
               data-tooltip-id="pm"
               data-tooltip-content={`${
-                airQuality.pm_level > 50
+                airQuality?.pm_level >= 50
                   ? "Particulate matter level is dangerously high."
                   : `${
-                      airQuality.pm_level > 35
+                      airQuality?.pm_level >= 35
                         ? "Particulate matter level is higher than acceptable levels."
                         : "Particulate matter level is acceptable."
                     }`
@@ -205,7 +258,7 @@ export default function AppliancesForm() {
             >
               <h2 className={headingStyle}>PM2.5</h2>
               <p className={measureStyle}>
-                {airQuality.pm_level} &#181;g/m<sup>3</sup>
+                {airQuality?.pm_level} &#181;g/m<sup>3</sup>
               </p>
               <Tooltip id="pm" place="top" />
             </div>
@@ -213,7 +266,7 @@ export default function AppliancesForm() {
         </div>
       </Col>
       <Col className="w-2/5 h-full mr-12 pl-8 justify-evenly">
-        <Select
+        <AirQualitySelect
           items={selectItems}
           setSelected={setSelectedValue}
           label={"Category"}
@@ -243,8 +296,15 @@ export default function AppliancesForm() {
           max={selectedValue.value === "humidity" ? 100 : undefined}
         />
         <div className="mt-2">
-          <PrimaryButton type="submit">Set Value</PrimaryButton>
+          <PrimaryButton
+            type="submit"
+            loading={submitting}
+            disabled={submitting}
+          >
+            Set Value
+          </PrimaryButton>
         </div>
+        {formError && <FormError>{formError}</FormError>}
       </Col>
     </form>
   );

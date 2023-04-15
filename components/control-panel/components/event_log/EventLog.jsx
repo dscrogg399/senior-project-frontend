@@ -1,39 +1,85 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Panel from "../../../ui/Containers/Panel";
 import PanelLabel from "../../../ui/Labels/PanelLabel";
 import { useTable, useSortBy } from "react-table";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import { eventsAtom } from "../../../../atom/eventsAtom";
+import { toast } from "react-toastify";
+import { useInterval } from "usehooks-ts";
+import { fetcher } from "../../../../lib/fetcher";
+import { format, parseISO } from "date-fns";
 
 export default function EventLog() {
-  const events = useRecoilValue(eventsAtom);
+  //state
+  const [events, setEvents] = useRecoilState(eventsAtom);
   const data = useMemo(() => events, [events]);
   const columns = useMemo(
     () => [
       {
         Header: "Appliance",
-        accessor: "appliance_name",
+        accessor: "fields.title",
       },
       {
         Header: "On At",
-        accessor: "on_at",
+        accessor: "fields.on_at",
+        Cell: (props) => format(parseISO(props.value), "M/dd/yy HH:mm"),
       },
       {
         Header: "Off At",
-        accessor: "off_at",
+        accessor: "fields.off_at",
+        Cell: (props) => format(parseISO(props.value), "M/dd/yy HH:mm"),
       },
       {
         Header: "Watts Used",
-        accessor: "wattage_used",
+        accessor: "fields.watts_used",
+        Cell: (props) => props.value.toFixed(3),
       },
       {
         Header: "Water Used",
-        accessor: "water_used",
+        accessor: "fields.water_used",
+        Cell: (props) => props.value.toFixed(3),
+      },
+      {
+        Header: "Cost",
+        accessor: "fields.cost",
+        Cell: (props) => props.value.toFixed(6),
       },
     ],
     []
   );
+
+  //fetch events
+  async function fetchEvents() {
+    let res = await fetcher.get("get_todays_events/");
+
+    //error checking
+    if (res.code !== "200") {
+      console.error(res.message);
+      toast(`Failed to fetch todays event log`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      return;
+    }
+    setEvents(res.data);
+  }
+
+  //fetch events on mount
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  //refresh every 5 seconds
+  useInterval(() => {
+    fetchEvents();
+  }, 5000);
 
   const {
     getTableProps,
@@ -50,9 +96,10 @@ export default function EventLog() {
     useSortBy
   );
 
-  useEffect(() => {
-    toggleSortBy("on_at", true);
-  }, [events]);
+  //this doesnt seem to be working
+  // useEffect(() => {
+  //   toggleSortBy("on_at", true);
+  // }, [todaysEvents]);
 
   return (
     <Panel className="h-full">

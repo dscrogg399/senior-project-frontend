@@ -14,6 +14,10 @@ interface IFormInput {
   closed_at: string;
 }
 
+//this feature is being cut from the final project due to time constraints, simulation of apertures is available
+//through the toggle. This is because our thermostat calculations are done every minute, and calculating this post hoc would
+//take up too much of our remaining time
+
 export default function AperturesForm() {
   //state
   const [apertures, setApertures] = useRecoilState(aperturesAtom);

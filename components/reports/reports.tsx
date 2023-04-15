@@ -1,9 +1,9 @@
 import Panel from "../ui/Containers/Panel";
 import Row from "../ui/Containers/Row";
 import PanelLabel from "../ui/Labels/PanelLabel";
-import { eachMonthOfInterval, startOfYear } from "date-fns";
+import { eachMonthOfInterval, format, startOfYear } from "date-fns";
 import MonthSelect from "./components/MonthSelect";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PrimaryButton from "../ui/Buttons/PrimaryButton";
 import BudgetModal from "./components/BudgetModal";
 import Graph from "./components/Graph";
@@ -21,7 +21,7 @@ import chartTrendline from "chartjs-plugin-trendline";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { faker } from "@faker-js/faker";
 import { eachDayOfInterval, lastDayOfMonth } from "date-fns";
-import { useRecoilValue } from "recoil";
+import { useRecoilValue, useRecoilState } from "recoil";
 import { budgetAtom } from "../../atom/budgetAtom";
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import { linearProject } from "../../lib/lineFitter";
@@ -31,6 +31,9 @@ import {
 } from "@heroicons/react/24/outline";
 import ReactDOMServer from "react-dom/server";
 import Col from "../ui/Containers/Col";
+import { EventLog } from "../../types/EventLog";
+import { fetcher } from "../../lib/fetcher";
+import FormError from "../ui/Forms/FormError";
 
 //get months of this year for select
 const months = eachMonthOfInterval({
@@ -44,7 +47,129 @@ export default function ReportsPage() {
     months[months.length - 1]
   );
   const [budgetModalOpen, setBudgetModalOpen] = useState<boolean>(false);
-  const budget = useRecoilValue(budgetAtom);
+  const [budget, setBudget] = useRecoilState(budgetAtom);
+  const [budgetError, setBudgetError] = useState<string | null>(null);
+
+  const [reports, setReports] = useState<EventLog[]>([]);
+  const [reportsError, setReportsError] = useState<string | null>(null);
+  const [noReports, setNoReports] = useState<boolean>(true);
+
+  //graph state
+  const [energyData, setEnergyData] = useState<any[]>([]);
+  const [waterData, setWaterData] = useState<any[]>([]);
+  const [costData, setCostData] = useState<any[]>([]);
+  const [energyProj, setEnergyProj] = useState<any[]>([]);
+  const [waterProj, setWaterProj] = useState<any[]>([]);
+  const [costProj, setCostProj] = useState<any[]>([]);
+
+  async function fetchBudget() {
+    let res = await fetcher.get("budget/");
+    if (res.code !== "200") {
+      setBudgetError(res.message);
+      console.error(res.message);
+      return;
+    }
+    setBudget(res.data);
+  }
+
+  async function fetchMonthlyReport() {
+    //format date as YYYY-MM-dd
+    let payload = {
+      date: format(selectedMonth, "yyyy-MM-dd"),
+    };
+    let res = await fetcher.post("monthly_report/", payload);
+
+    //error checking
+    if (res.code !== "200") {
+      setBudgetError(res.message);
+      console.error(res.message);
+      return;
+    }
+    setReports(res.data);
+    setNoReports(false);
+  }
+
+  //life cycle methods
+  //on mount
+  useEffect(() => {
+    fetchBudget();
+    fetchMonthlyReport();
+  }, []);
+
+  //on month change
+  useEffect(() => {
+    fetchMonthlyReport();
+  }, [selectedMonth]);
+
+  //on reports changed
+  useEffect(() => {
+    //if reports is empty, set no reports message, reset graph state
+    if (reports.length === 0) {
+      setEnergyData([]);
+      setWaterData([]);
+      setCostData([]);
+      setEnergyProj([]);
+      setWaterProj([]);
+      setCostProj([]);
+      setNoReports(true);
+      return;
+    }
+    //formatting data for graph
+    let energyByDate: number[] = [];
+    let waterByDate: number[] = [];
+    let costByDate: number[] = [];
+    let energy = 0;
+    let water = 0;
+    let cost = 0;
+    console.log("reports changed");
+    console.log(reports);
+    for (const report of reports) {
+      //append the data from reports
+      energy += report.fields.watts_used / 1000;
+      water += report.fields.water_used;
+      cost += report.fields.cost;
+      energyByDate.push(energy);
+      waterByDate.push(water);
+      costByDate.push(cost);
+    }
+
+    //project data for days in the future
+    let costProjection = days.map((day, index) => {
+      if (index === costByDate.length - 1) {
+        return costByDate[costByDate.length - 1];
+      }
+      if (!costByDate[index]) {
+        return linearProject(costByDate, index);
+      }
+      return null;
+    });
+    let energyProjection = days.map((day, index) => {
+      if (index === energyByDate.length - 1) {
+        return energyByDate[energyByDate.length - 1];
+      }
+      if (!energyByDate[index]) {
+        return linearProject(energyByDate, index);
+      }
+      return null;
+    });
+    let waterProjection = days.map((day, index) => {
+      if (index === waterByDate.length - 1) {
+        return waterByDate[waterByDate.length - 1];
+      }
+      if (!waterByDate[index]) {
+        return linearProject(waterByDate, index);
+      }
+      return null;
+    });
+
+    //set graph state
+    setEnergyData(energyByDate);
+    setWaterData(waterByDate);
+    setCostData(costByDate);
+    setEnergyProj(energyProjection);
+    setWaterProj(waterProjection);
+    setCostProj(costProjection);
+  }, [reports]);
 
   //graph setup
   ChartJS.register(
@@ -170,74 +295,38 @@ export default function ReportsPage() {
   });
   let labels = days.map((day) => day.getDate().toString());
 
-  //dummy data generation
-  let energyData: any[] = [];
-  let waterData: any[] = [];
-  let costData: any[] = [];
-  let energy = 0;
-  let water = 0;
-  let cost = 0;
-  //for each day of the month
-  for (const day of days) {
-    //skip future days
-    if (day > new Date()) {
-      continue;
-    }
-    //generate random data for each day
-    let dayCost = 0;
-    //weekends
-    if ([0, 6].includes(day.getDay())) {
-      let newEnergy = faker.datatype.number({ min: 30, max: 40 });
-      let newWater = faker.datatype.number({ min: 300, max: 400 });
-      energy += newEnergy;
-      water += newWater;
-      dayCost += newEnergy * 0.12;
-      dayCost += newWater * 0.003368983957219;
-    }
-    //weekdays
-    else {
-      let newEnergy = faker.datatype.number({ min: 20, max: 30 });
-      let newWater = faker.datatype.number({ min: 200, max: 300 });
-      energy += newEnergy;
-      water += newWater;
-      dayCost += newEnergy * 0.12;
-      dayCost += newWater * 0.003368983957219;
-    }
-    //increment data
-    cost += dayCost;
-    energyData.push(energy);
-    waterData.push(water);
-    costData.push(cost);
-  }
-
-  //project data for days in the future
-  let costProj = days.map((day, index) => {
-    if (index === costData.length - 1) {
-      return costData[costData.length - 1];
-    }
-    if (!costData[index]) {
-      return linearProject(costData, index);
-    }
-    return null;
-  });
-  let energyProj = days.map((day, index) => {
-    if (index === energyData.length - 1) {
-      return energyData[energyData.length - 1];
-    }
-    if (!energyData[index]) {
-      return linearProject(energyData, index);
-    }
-    return null;
-  });
-  let waterProj = days.map((day, index) => {
-    if (index === waterData.length - 1) {
-      return waterData[waterData.length - 1];
-    }
-    if (!waterData[index]) {
-      return linearProject(waterData, index);
-    }
-    return null;
-  });
+  // //for each day of the month
+  // for (const day of days) {
+  //   //skip future days
+  //   if (day > new Date()) {
+  //     continue;
+  //   }
+  //   //generate random data for each day
+  //   let dayCost = 0;
+  //   //weekends
+  //   if ([0, 6].includes(day.getDay())) {
+  //     let newEnergy = faker.datatype.number({ min: 30, max: 40 });
+  //     let newWater = faker.datatype.number({ min: 300, max: 400 });
+  //     energy += newEnergy;
+  //     water += newWater;
+  //     dayCost += newEnergy * 0.12;
+  //     dayCost += newWater * 0.003368983957219;
+  //   }
+  //   //weekdays
+  //   else {
+  //     let newEnergy = faker.datatype.number({ min: 20, max: 30 });
+  //     let newWater = faker.datatype.number({ min: 200, max: 300 });
+  //     energy += newEnergy;
+  //     water += newWater;
+  //     dayCost += newEnergy * 0.12;
+  //     dayCost += newWater * 0.003368983957219;
+  //   }
+  //   //increment data
+  //   cost += dayCost;
+  //   energyData.push(energy);
+  //   waterData.push(water);
+  //   costData.push(cost);
+  // }
 
   //format data for graphs
   const data = {
@@ -372,9 +461,20 @@ export default function ReportsPage() {
                 </div>
               )}
             </div>
-            <PrimaryButton onClick={() => setBudgetModalOpen(true)}>
-              Budget
-            </PrimaryButton>
+            <div
+              data-tooltip-id="budget-button"
+              data-tooltip-content="Failed to fetch budget information. Please refresh the page."
+            >
+              <PrimaryButton
+                onClick={() => setBudgetModalOpen(true)}
+                disabled={!budget.id}
+              >
+                Budget
+                {!budget.id && (
+                  <ReactTooltip id="budget-button" place="bottom" />
+                )}
+              </PrimaryButton>
+            </div>
           </Row>
         </section>
         {/* graph */}
@@ -383,6 +483,13 @@ export default function ReportsPage() {
             <Graph options={options} data={data} />
           </div>
         </section>
+        {noReports && (
+          <Row className="w-full justify-center mb-2">
+            <FormError>
+              No reports found for {format(selectedMonth, "MMMM")}
+            </FormError>
+          </Row>
+        )}
       </div>
     </Panel>
   );

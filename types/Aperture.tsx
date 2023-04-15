@@ -1,10 +1,12 @@
 export interface Aperture {
-  id: number;
+  pk: number;
+  fields: ApertureFields;
+}
+
+interface ApertureFields {
   type: number;
+  title: string;
   status: boolean;
   x: number;
   y: number;
-  created_at: string;
-  is_active: boolean;
-  title: string;
 }

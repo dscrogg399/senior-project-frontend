@@ -3,7 +3,7 @@ import { classNames } from "../../../../lib/functions";
 
 const tabs = [
   { name: "Appliances" },
-  { name: "Apertures" },
+  // { name: "Apertures" },
   { name: "Air Quality" },
 ];
 
