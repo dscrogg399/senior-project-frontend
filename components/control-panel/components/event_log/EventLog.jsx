@@ -23,27 +23,27 @@ export default function EventLog() {
       {
         Header: "On At",
         accessor: "fields.on_at",
-        Cell: (props) => format(parseISO(props.value), "M/dd/yy HH:mm"),
+        Cell: (props) => format(parseISO(props?.value), "M/dd/yy HH:mm"),
       },
       {
         Header: "Off At",
         accessor: "fields.off_at",
-        Cell: (props) => format(parseISO(props.value), "M/dd/yy HH:mm"),
+        Cell: (props) => format(parseISO(props?.value), "M/dd/yy HH:mm"),
       },
       {
         Header: "Watts Used",
         accessor: "fields.watts_used",
-        Cell: (props) => props.value.toFixed(3),
+        Cell: (props) => props?.value?.toFixed(3),
       },
       {
         Header: "Water Used",
         accessor: "fields.water_used",
-        Cell: (props) => props.value.toFixed(3),
+        Cell: (props) => props?.value?.toFixed(3),
       },
       {
         Header: "Cost",
         accessor: "fields.cost",
-        Cell: (props) => props.value.toFixed(6),
+        Cell: (props) => props?.value?.toFixed(6),
       },
     ],
     []

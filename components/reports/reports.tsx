@@ -55,6 +55,8 @@ export default function ReportsPage() {
   const [reportsError, setReportsError] = useState<string | null>(null);
   const [noReports, setNoReports] = useState<boolean>(true);
 
+  const [firstReportDay, setFirstReportDay] = useState<number>(1);
+
   const [showLoading, setShowLoading] = useState<boolean>(true);
 
   //graph state
@@ -89,6 +91,7 @@ export default function ReportsPage() {
       return;
     }
     setReports(res.data);
+    setFirstReportDay(res.first_day);
     setNoReports(false);
     setShowLoading(false);
   }
@@ -126,6 +129,15 @@ export default function ReportsPage() {
     let energy = 0;
     let water = 0;
     let cost = 0;
+
+    //append 0s for every day from the first of the month to firstReportDay
+    let i = 0;
+    for (i; i < firstReportDay; i++) {
+      energyByDate.push(0);
+      waterByDate.push(0);
+      costByDate.push(0);
+    }
+
     for (const report of reports) {
       //append the data from reports
       energy += report.watts_used / 1000;

@@ -47,6 +47,7 @@ export default function BudgetModal({
     setValue("max_cost", budget.max_cost);
     setValue("max_energy", budget.max_energy);
     setValue("max_water", budget.max_water);
+    setBudgetEnabled(budget.is_active);
   }, [open, budget]);
 
   //on submit, update budget

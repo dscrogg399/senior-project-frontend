@@ -37,7 +37,7 @@ export default function AirQuality() {
   //interval refetch every 1 minute
   useInterval(() => {
     fetchAirQualityData();
-  }, 60000);
+  }, 30000);
 
   const headingStyle = "text-2xl font-semibold";
   const measureStyle = "font-semibold";
